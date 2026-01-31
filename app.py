@@ -44,7 +44,7 @@ selected_city = st.sidebar.selectbox("🏙️ Select City", ["All"] + city_list)
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect("💰 Price Range", price_list)
 
-# ================= CUISINE (Top 10 Default Selected) =================
+# ================= CUISINE LOGIC =================
 all_cuisines = (
     df["Cuisines"]
     .dropna()
@@ -104,7 +104,7 @@ filtered_df = filtered_df[filtered_df["Votes"] >= min_votes]
 
 # ================= MAIN TITLE =================
 st.title("🍽️ Hotel Industry Insights Through Data Analytics")
-st.caption("Professional Streamlit Dashboard with Rating Classification")
+st.caption("Professional Streamlit Dashboard with Rating & Cuisine Analysis")
 
 # ================= EMPTY CHECK =================
 if filtered_df.empty:
@@ -112,7 +112,6 @@ if filtered_df.empty:
 else:
     # ================= METRICS =================
     c1, c2, c3, c4 = st.columns(4)
-
     c1.metric("🏨 Total Restaurants", len(filtered_df))
     c2.metric("⭐ Avg Rating", round(filtered_df["Aggregate rating"].mean(), 2))
     c3.metric("🗳️ Avg Votes", int(filtered_df["Votes"].mean()))
@@ -123,18 +122,40 @@ else:
 
     st.divider()
 
-    # ================= RATING CATEGORY BAR =================
+    # ================= RATING CATEGORY GRAPH =================
     st.subheader("⭐ Rating Category Distribution")
 
     rating_fig = px.bar(
         filtered_df["Rating Category"].value_counts().reindex(
             ["Excellent", "Good", "Average"]
         ),
-        labels={"index": "Rating Category", "value": "Number of Restaurants"},
-        color=["Excellent", "Good", "Average"]
+        labels={"index": "Rating Category", "value": "Number of Restaurants"}
     )
 
     st.plotly_chart(rating_fig, use_container_width=True)
+
+    st.divider()
+
+    # ================= CUISINE GRAPH =================
+    st.subheader("🍕 Top Cuisines Distribution")
+
+    cuisine_count = (
+        filtered_df["Cuisines"]
+        .dropna()
+        .str.split(", ")
+        .explode()
+        .value_counts()
+        .head(10)
+        .sort_values()
+    )
+
+    cuisine_fig = px.bar(
+        cuisine_count,
+        orientation="h",
+        labels={"value": "Number of Restaurants", "index": "Cuisine"}
+    )
+
+    st.plotly_chart(cuisine_fig, use_container_width=True)
 
     st.divider()
 
@@ -145,21 +166,21 @@ else:
         "Aggregate rating", ascending=False
     ).head(10)
 
-    fig = px.bar(
+    top_fig = px.bar(
         top_restaurants,
         x="Aggregate rating",
         y="Restaurant Name",
         orientation="h",
-        color="Aggregate rating",
         hover_data=["City", "Votes", "Price range"]
     )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(top_fig, use_container_width=True)
 
     st.divider()
 
     # ================= DATA TABLE =================
     st.subheader("📋 Restaurant Dataset")
+
     st.dataframe(
         filtered_df[
             [
@@ -178,9 +199,9 @@ else:
 # ================= CONCLUSION =================
 st.subheader("📌 Key Business Insights")
 st.markdown("""
-• Excellent rated restaurants attract higher customer engagement  
-• Majority restaurants fall under Good and Average categories  
-• Rating classification helps in better decision making  
-• Cuisine popularity directly impacts restaurant success  
-• Data-driven insights improve business strategies  
+• Certain cuisines dominate the restaurant market  
+• Excellent rated restaurants gain higher customer trust  
+• Cuisine popularity influences customer choices  
+• Online delivery enhances restaurant reach  
+• Data analytics supports strategic decisions  
 """)
