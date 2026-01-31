@@ -38,6 +38,38 @@ if selected_city != "All":
 else:
     filtered_df = df
 
+# ---------------- LOGIN PAGE ----------------
+def login_page():
+    st.markdown("<h2 style='text-align:center;'>🔐 Login</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:grey;'>Hotel Industry Insights Dashboard</p>", unsafe_allow_html=True)
+
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+
+    if st.button("Login"):
+        if username == "admin" and password == "admin123":
+            st.session_state.logged_in = True
+            st.success("Login Successful ✅")
+            st.rerun()
+        else:
+            st.error("Invalid Username or Password ❌")
+
+
+# ---------------- LOGOUT ----------------
+def logout_button():
+    st.sidebar.markdown("### 👤 User")
+    if st.sidebar.button("Logout"):
+        st.session_state.logged_in = False
+        st.rerun()
+
+
+# ---------------- SESSION CHECK ----------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    login_page()
+    st.stop()
 # ====================== OVERVIEW ======================
 st.markdown("## 📊 Overview")
 
