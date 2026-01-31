@@ -139,18 +139,23 @@ for i, v in enumerate(avg_rating.values):
 st.pyplot(fig3)
 
 # ================= CITY-WISE RESTAURANT RATINGS =================
-st.subheader("🏙️ City-wise Restaurant Ratings")
+st.subheader("🏙️ City-wise Top Restaurant Ratings")
 
 if selected_city != "All" and name_col:
+    # selected city data sort by rating
     city_df = filtered_df.sort_values("Aggregate rating", ascending=False)
 
+    # user slider for top N restaurants
     top_n = st.slider("Select Top Restaurants", 5, 20, 10)
 
-    top_city_df = city_df.head(top_n)
+    top_city_df = city_df.head(top_n).copy()
 
-    fig4, ax4 = plt.subplots(figsize=(10, top_n * 0.5))
+    # figure size dynamic based on top_n
+    fig4, ax4 = plt.subplots(figsize=(10, top_n * 0.6))
+
+    # horizontal bar chart
     bars = ax4.barh(
-        top_city_df[name_col][::-1],
+        top_city_df[name_col][::-1],  # reverse for top on top
         top_city_df["Aggregate rating"][::-1],
         color="purple"
     )
@@ -158,12 +163,17 @@ if selected_city != "All" and name_col:
     ax4.set_xlim(0, 5)
     ax4.set_xlabel("Rating")
     ax4.set_ylabel("Restaurant Name")
+    ax4.set_title(f"Top {top_n} Restaurants in {selected_city}")
 
+    # text annotation for bars
     for bar in bars:
-        w = bar.get_width()
-        ax4.text(w + 0.05, bar.get_y() + bar.get_height()/2,
-                 f"{w:.2f}", va="center")
+        width = bar.get_width()
+        if width < 1:  # if rating is small, put text outside
+            ax4.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center")
+        else:  # else put text inside
+            ax4.text(width - 0.2, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center", color="white")
 
+    plt.tight_layout()
     st.pyplot(fig4)
 else:
     st.info("Please select a city to view restaurant-wise ratings.")
