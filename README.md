@@ -1,6 +1,7 @@
 # Hotel-industry-streamlit-app
 
 http://share.streamlit.io
+
 https://hotel-industry-app-app-cfntljtloleapeebgduwqj.streamlit.app/
 
 # 🍽️ Hotel Industry Insights Through Data Analytics
