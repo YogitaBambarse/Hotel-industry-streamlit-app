@@ -24,22 +24,30 @@ st.sidebar.header("🔍 Filters")
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
 
-# Optional: Price range filter
+# Price range filter
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect("Select Price Range", price_list, default=price_list)
 
-# Optional: Cuisine filter
+# Cuisine filter
 cuisine_list = sorted(df["Cuisines"].dropna().str.split(", ").explode().unique())
 selected_cuisine = st.sidebar.multiselect("Select Cuisines", cuisine_list, default=cuisine_list)
 
-# Filter data
+# ================= SAFE FILTERING =================
 filtered_df = df.copy()
+
+# City filter
 if selected_city != "All":
     filtered_df = filtered_df[filtered_df["City"] == selected_city]
+
+# Price range filter
 if selected_price:
     filtered_df = filtered_df[filtered_df["Price range"].isin(selected_price)]
+
+# Cuisine filter (safe, handle NaN)
 if selected_cuisine:
-    filtered_df = filtered_df[filtered_df["Cuisines"].str.contains('|'.join(selected_cuisine))]
+    filtered_df = filtered_df[
+        filtered_df["Cuisines"].str.contains('|'.join(selected_cuisine), na=False)
+    ]
 
 # Fill missing values
 filtered_df["Aggregate rating"] = filtered_df["Aggregate rating"].fillna(0)
