@@ -37,12 +37,6 @@ if selected_city != "All":
     filtered_df = df[df["City"] == selected_city]
 else:
     filtered_df = df
-# ---------------- LOGOUT ----------------
-def logout_button():
-    st.sidebar.markdown("### 👤 User")
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
 
 # ---------------- LOGIN PAGE ----------------
 def login_page():
