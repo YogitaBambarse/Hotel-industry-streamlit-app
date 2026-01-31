@@ -2,26 +2,34 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ---------------- PAGE CONFIG ----------------
+# ---------------- Page Configuration ----------------
 st.set_page_config(
-    page_title="Hotel Industry Insights",
+    page_title="Hotel Industry Insights Dashboard",
+    page_icon="🍽️",
     layout="wide"
 )
 
-# ---------------- TITLE ----------------
-st.title("🍽️ Hotel Industry Insights: A Data-Driven Market Analysis")
-st.caption("Exploratory Data Analysis of Restaurant Industry using Real-World Data")
+# ---------------- Title ----------------
+st.markdown(
+    "<h1 style='text-align: center;'>🍽️ Hotel Industry Insights Through Data Analytics</h1>",
+    unsafe_allow_html=True
+)
+st.markdown(
+    "<p style='text-align: center; color: grey;'>Professional Data Analytics Dashboard for Restaurant Business Insights</p>",
+    unsafe_allow_html=True
+)
 
-# ---------------- LOAD DATA ----------------
+# ---------------- Load Dataset ----------------
 @st.cache_data
 def load_data():
-    return pd.read_csv("Dataset.csv")
+    df = pd.read_csv("Dataset.csv")
+    df.columns = df.columns.str.strip()
+    return df
 
 df = load_data()
 
-# ---------------- SIDEBAR ----------------
+# ---------------- Sidebar ----------------
 st.sidebar.header("🔍 Filter Options")
-
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
 
@@ -30,143 +38,126 @@ if selected_city != "All":
 else:
     filtered_df = df
 
-# ---------------- KPI METRICS ----------------
-st.markdown("## 📊 Market Overview")
+# ====================== OVERVIEW ======================
+st.markdown("## 📊 Overview")
 
 c1, c2, c3, c4 = st.columns(4)
 
-c1.metric("🏨 Total Active Restaurants", filtered_df.shape[0])
-c2.metric(
-    "⭐ Overall Customer Satisfaction",
-    round(filtered_df["Aggregate rating"].mean(), 2)
-)
-c3.metric(
-    "🗳️ Total Customer Engagement",
-    int(filtered_df["Votes"].sum())
-)
+c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
+c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(skipna=True), 2))
+c3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum(skipna=True)))
 c4.metric(
-    "🚚 Online Delivery Adoption",
-    filtered_df[filtered_df["Has Online delivery"] == "Yes"].shape[0]
+    "🚚 Online Delivery",
+    filtered_df[filtered_df["Has Online delivery"].str.strip() == "Yes"].shape[0]
 )
 
-# ---------------- PRICE RANGE ----------------
-st.markdown("## 💰 Price Range Distribution")
+st.divider()
 
-price_counts = filtered_df["Price range"].value_counts().sort_index()
-
-fig1, ax1 = plt.subplots()
-ax1.bar(price_counts.index, price_counts.values)
-ax1.set_xlabel("Price Range")
-ax1.set_ylabel("Number of Restaurants")
-ax1.set_title("Distribution of Restaurants by Price Range")
-
-st.pyplot(fig1)
-
-st.info(
-    "Insight: Majority of restaurants fall under mid-price categories, indicating strong customer preference for affordable dining options."
+# ====================== TABS ======================
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["💰 Price Analysis", "🍕 Cuisine Analysis", "⭐ Rating Analysis", "🏙️ City-wise Restaurants"]
 )
 
-# ---------------- CUISINES ----------------
-st.markdown("## 🍽️ Customer Preference Analysis (Top Cuisines)")
+# ---------------- TAB 1: Price Analysis ----------------
+with tab1:
+    st.subheader("Restaurants Distribution by Price Range")
 
-cuisines = (
-    filtered_df["Cuisines"]
-    .dropna()
-    .str.split(", ")
-    .explode()
-)
+    price_counts = filtered_df["Price range"].value_counts().sort_index()
 
-top_cuisines = cuisines.value_counts().head(10)
+    fig, ax = plt.subplots(figsize=(8,5))
+    bars = ax.bar(price_counts.index, price_counts.values, color="#4DA8DA")
 
-fig2, ax2 = plt.subplots()
-ax2.barh(top_cuisines.index, top_cuisines.values)
-ax2.set_xlabel("Number of Restaurants")
-ax2.set_ylabel("Cuisine Type")
-ax2.set_title("Top 10 Most Popular Cuisines")
+    ax.set_xlabel("Price Range")
+    ax.set_ylabel("Number of Restaurants")
+    ax.set_title("Price Range Distribution")
 
-st.pyplot(fig2)
+    for bar in bars:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, h, str(h),
+                ha='center', va='bottom', fontweight='bold')
 
-st.info(
-    "Insight: A limited set of cuisines dominates the market, reflecting concentrated customer taste preferences."
-)
+    st.pyplot(fig)
 
-# ---------------- AVERAGE RATING GRAPH ----------------
-st.markdown("## ⭐ Rating Performance Overview")
+# ---------------- TAB 2: Cuisine Analysis ----------------
+with tab2:
+    st.subheader("Top 10 Popular Cuisines")
 
-rating_df = filtered_df.groupby("Price range")["Aggregate rating"].mean()
+    cuisines = filtered_df["Cuisines"].dropna().str.split(", ").explode()
+    top_cuisines = cuisines.value_counts().head(10)
 
-fig3, ax3 = plt.subplots()
-bars = ax3.bar(rating_df.index, rating_df.values)
+    fig, ax = plt.subplots(figsize=(8,5))
+    bars = ax.barh(top_cuisines.index[::-1], top_cuisines.values[::-1], color="#7ED957")
 
-ax3.set_xlabel("Price Range")
-ax3.set_ylabel("Average Rating")
-ax3.set_title("Average Rating by Price Range")
+    ax.set_xlabel("Number of Restaurants")
+    ax.set_ylabel("Cuisine")
+    ax.set_title("Top 10 Cuisines")
 
-for bar in bars:
-    height = bar.get_height()
-    ax3.text(
-        bar.get_x() + bar.get_width() / 2,
-        height,
-        f"{height:.2f}",
-        ha="center",
-        va="bottom"
-    )
+    for bar in bars:
+        w = bar.get_width()
+        ax.text(w + 1, bar.get_y() + bar.get_height()/2, str(w),
+                va='center', fontweight='bold')
 
-st.pyplot(fig3)
+    st.pyplot(fig)
 
-st.info(
-    "Insight: Customer satisfaction remains relatively stable across price categories, suggesting quality is not strictly price-dependent."
-)
+# ---------------- TAB 3: Rating Analysis ----------------
+with tab3:
+    st.subheader("Average Rating by Price Range")
 
-# ---------------- CITY WISE RESTAURANTS ----------------
-st.markdown("## 🏨 City-wise Top Rated Restaurants")
+    avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean()
 
-city_df = filtered_df[
-    ["Restaurant Name", "Aggregate rating"]
-].dropna()
+    fig, ax = plt.subplots(figsize=(8,5))
+    bars = ax.bar(avg_rating.index, avg_rating.values, color="#FFA500")
 
-city_df = city_df.sort_values(
-    by="Aggregate rating",
-    ascending=False
-).head(15)
+    ax.set_xlabel("Price Range")
+    ax.set_ylabel("Average Rating")
+    ax.set_ylim(0,5)
+    ax.set_title("Average Rating vs Price Range")
 
-fig4, ax4 = plt.subplots(figsize=(8, 6))
-bars4 = ax4.barh(
-    city_df["Restaurant Name"],
-    city_df["Aggregate rating"]
-)
+    for bar in bars:
+        h = bar.get_height()
+        ax.text(bar.get_x() + bar.get_width()/2, h + 0.05, f"{h:.2f}",
+                ha='center', color='red', fontweight='bold')
 
-ax4.set_xlabel("Aggregate Rating")
-ax4.set_ylabel("Restaurant Name")
-ax4.set_title("Top Rated Restaurants (Selected City)")
-ax4.invert_yaxis()
+    st.pyplot(fig)
 
-for bar in bars4:
-    width = bar.get_width()
-    ax4.text(
-        width,
-        bar.get_y() + bar.get_height() / 2,
-        f"{width:.1f}",
-        va="center"
-    )
+# ---------------- TAB 4: City-wise Restaurants ----------------
+with tab4:
+    if selected_city == "All":
+        st.info("Please select a specific city from sidebar to view restaurant-wise ratings.")
+    else:
+        st.subheader(f"Top Restaurants in {selected_city} by Rating")
 
-st.pyplot(fig4)
+        city_df = filtered_df.sort_values("Aggregate rating")
 
-st.info(
-    "Insight: The chart highlights competitive leaders within the selected city based on customer ratings."
-)
+        fig, ax = plt.subplots(figsize=(10, max(6, len(city_df)*0.3)))
+        bars = ax.barh(city_df["Restaurant Name"], city_df["Aggregate rating"], color="#9B59B6")
 
-# ---------------- DATA PREVIEW ----------------
-st.markdown("## 📄 Dataset Preview")
-st.dataframe(filtered_df.head(20))
+        ax.set_xlabel("Rating")
+        ax.set_ylabel("Restaurant Name")
+        ax.set_xlim(0,5)
 
-# ---------------- CONCLUSION ----------------
-st.markdown("## 📝 Key Business Insights & Conclusion")
+        for bar in bars:
+            w = bar.get_width()
+            ax.text(w + 0.05, bar.get_y() + bar.get_height()/2, f"{w:.2f}",
+                    va='center', fontweight='bold')
 
-st.success("""
+        st.pyplot(fig)
+
+# ====================== DATASET ======================
+with st.expander("📄 View Dataset Sample"):
+    st.dataframe(filtered_df.head(20))
+
+# ====================== INSIGHTS ======================
+st.markdown("## 📌 Key Business Insights")
+st.markdown("""
 • Mid-range priced restaurants dominate the market  
-• Customer ratings are consistent across price ranges  
-• A small set of cuisines captures major market share  
-• City-wise analysis reveals strong competition among top-rated restaurants  
-• Online delivery significantly enhances restaurant visibility  
+• Customer ratings remain consistent across price ranges  
+• Limited cuisines capture major market share  
+• City-wise analysis shows strong competition among top restaurants  
+• Online delivery improves restaurant visibility and reach  
 """)
+
+st.markdown(
+    "<p style='text-align:center; color:grey;'>Dashboard created using Python, Pandas, Matplotlib & Streamlit</p>",
+    unsafe_allow_html=True
+)
