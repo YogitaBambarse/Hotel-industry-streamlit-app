@@ -107,55 +107,7 @@ for i, v in enumerate(avg_rating.values):
     ax3.text(avg_rating.index[i], v + 0.05, f"{v:.2f}", ha="center")
 st.pyplot(fig3)
 
-st.subheader("🏙️ City-wise Top Restaurant Ratings (Horizontal Bar)")
 
-# Auto detect restaurant name column
-name_col = None
-for col in df.columns:
-    if "restaurant" in col.lower() or "hotel" in col.lower() or "name" in col.lower():
-        name_col = col
-        break
-
-if not name_col:
-    st.warning("Dataset मध्ये restaurant/hotel name column सापडला नाही.")
-else:
-    # Filter by city
-    if selected_city != "All":
-        city_df = filtered_df[filtered_df["City"] == selected_city].copy()
-    else:
-        city_df = filtered_df.copy()
-
-    # Drop rows with NaN in name or rating
-    city_df = city_df[[name_col, "Aggregate rating"]].dropna()
-
-    if city_df.empty:
-        st.warning("Selected city मध्ये डेटा उपलब्ध नाही.")
-    else:
-        # Sort by rating
-        city_df = city_df.sort_values("Aggregate rating", ascending=True)  # horizontal bars low -> high
-
-        # Top N restaurants
-        top_n = st.slider("Select Top Restaurants", 5, 20, 10)
-        top_city_df = city_df.tail(top_n)  # tail because ascending sort
-
-        # Horizontal Bar Graph
-        fig, ax = plt.subplots(figsize=(10, top_n * 0.6))
-        bars = ax.barh(top_city_df[name_col], top_city_df["Aggregate rating"], color="purple")
-        ax.set_xlim(0, 5)
-        ax.set_xlabel("Rating")
-        ax.set_ylabel("Restaurant Name")
-        ax.set_title(f"Top {top_n} Restaurants in {selected_city}")
-
-        # Add text on bars
-        for bar in bars:
-            width = bar.get_width()
-            if width < 1:
-                ax.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center")
-            else:
-                ax.text(width - 0.2, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center", color="white")
-
-        plt.tight_layout()
-        st.pyplot(fig)
 # ================= AUTO INSIGHT =================
 if not filtered_df['Price range'].dropna().empty:
     most_common_price = filtered_df['Price range'].mode()[0]
