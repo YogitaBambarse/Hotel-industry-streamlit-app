@@ -1,7 +1,7 @@
 # Hotel-industry-streamlit-app
 
 http://share.streamlit.io
-https://github.com/YogitaBambarse/Hotel-industry-streamlit-app
+https://hotel-industry-app-app-cfntljtloleapeebgduwqj.streamlit.app/
 
 # 🍽️ Hotel Industry Insights Through Data Analytics
 
