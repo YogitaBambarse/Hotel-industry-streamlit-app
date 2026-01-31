@@ -105,10 +105,10 @@ if selected_city != "All":
     city_df = city_df.sort_values(by="Aggregate rating", ascending=True)
     
     fig4, ax4 = plt.subplots(figsize=(10, max(6, len(city_df)*0.3)))  # height dynamic based on number of restaurants
-    bars4 = ax4.barh(city_df["Hotel Name"], city_df["Aggregate rating"], color='purple')
+    bars4 = ax4.barh(city_df["Restaurant Name"], city_df["Aggregate rating"], color='purple')
     
     ax4.set_xlabel("Average Rating", fontsize=12)
-    ax4.set_ylabel("Hotel Name", fontsize=12)
+    ax4.set_ylabel("Restaurant Name", fontsize=12)
     ax4.set_title(f"Restaurants in {selected_city} by Average Rating", fontsize=14)
     ax4.set_xlim(0, 5)  # Rating scale
     
