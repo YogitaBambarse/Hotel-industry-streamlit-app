@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.express as px
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Hotel Industry Insights", layout="wide")
@@ -43,7 +42,7 @@ if selected_city != "All":
 if selected_price:
     filtered_df = filtered_df[filtered_df["Price range"].isin(selected_price)]
 
-# Cuisine filter (safe, handle NaN)
+# Cuisine filter (safe)
 if selected_cuisine:
     filtered_df = filtered_df[
         filtered_df["Cuisines"].str.contains('|'.join(selected_cuisine), na=False)
@@ -63,58 +62,47 @@ st.sidebar.download_button(
     file_name="hotel_filtered_data.csv"
 )
 
-# ================= PROFESSIONAL METRICS CARDS =================
-st.markdown("""
-<div style='display:flex; justify-content:space-between; margin-bottom:20px;'>
-<div style='background-color:#f0f8ff; padding:20px; border-radius:10px; text-align:center; flex:1; margin-right:5px;'>
-<h3>🏨 Total Restaurants</h3>
-<p style='font-size:24px'>{}</p>
-</div>
-<div style='background-color:#ffe4e1; padding:20px; border-radius:10px; text-align:center; flex:1; margin-right:5px;'>
-<h3>⭐ Average Rating</h3>
-<p style='font-size:24px'>{}</p>
-</div>
-<div style='background-color:#f5f5dc; padding:20px; border-radius:10px; text-align:center; flex:1; margin-right:5px;'>
-<h3>🗳️ Total Votes</h3>
-<p style='font-size:24px'>{}</p>
-</div>
-<div style='background-color:#e6e6fa; padding:20px; border-radius:10px; text-align:center; flex:1;'>
-<h3>🚚 Online Delivery</h3>
-<p style='font-size:24px'>{}</p>
-</div>
-</div>
-""".format(
-    filtered_df.shape[0],
-    round(filtered_df["Aggregate rating"].mean(),2),
-    int(filtered_df["Votes"].sum()),
-    filtered_df[filtered_df["Has Online delivery"].str.lower()=="yes"].shape[0]
-), unsafe_allow_html=True)
+# ================= PROFESSIONAL METRICS =================
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("🏨 Total Restaurants", filtered_df.shape[0])
+col2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(), 2))
+col3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum()))
+col4.metric("🚚 Online Delivery", filtered_df[filtered_df["Has Online delivery"].str.lower() == "yes"].shape[0])
 
 st.markdown("---")
 
 # ================= PRICE RANGE DISTRIBUTION =================
 st.subheader("💰 Price Range Distribution")
 price_counts = filtered_df["Price range"].value_counts().sort_index()
-
-fig1, ax1 = plt.subplots()
-sns.barplot(x=price_counts.index, y=price_counts.values, palette="Blues_d", ax=ax1)
-ax1.set_xlabel("Price Range")
-ax1.set_ylabel("Number of Restaurants")
-for i, v in enumerate(price_counts.values):
-    ax1.text(i, v + 0.1, v, ha="center")
-st.pyplot(fig1)
+fig_price = px.bar(
+    x=price_counts.index,
+    y=price_counts.values,
+    labels={"x":"Price Range","y":"Number of Restaurants"},
+    text=price_counts.values,
+    color=price_counts.values,
+    color_continuous_scale="Blues"
+)
+fig_price.update_layout(showlegend=False)
+st.plotly_chart(fig_price, use_container_width=True)
 
 # ================= TOP CUISINES =================
 st.subheader("🍕 Top 10 Cuisines")
 cuisines = filtered_df["Cuisines"].str.split(", ").explode()
 top_cuisines = cuisines.value_counts().head(10)
-
-fig2, ax2 = plt.subplots()
-sns.barplot(x=top_cuisines.values[::-1], y=top_cuisines.index[::-1], palette="Greens_d", ax=ax2)
-ax2.set_xlabel("Number of Restaurants")
-st.pyplot(fig2)
+fig_cuisine = px.bar(
+    x=top_cuisines.values[::-1],
+    y=top_cuisines.index[::-1],
+    orientation='h',
+    labels={"x":"Number of Restaurants","y":"Cuisine"},
+    text=top_cuisines.values[::-1],
+    color=top_cuisines.values[::-1],
+    color_continuous_scale="Greens"
+)
+fig_cuisine.update_layout(showlegend=False)
+st.plotly_chart(fig_cuisine, use_container_width=True)
 
 # ================= RATING CATEGORY =================
+st.subheader("⭐ Rating Categories")
 def rating_category(r):
     if r >= 4.5:
         return "Excellent"
@@ -122,24 +110,28 @@ def rating_category(r):
         return "Good"
     else:
         return "Average"
-
 filtered_df["Rating Category"] = filtered_df["Aggregate rating"].apply(rating_category)
-
-st.subheader("⭐ Rating Categories")
-st.bar_chart(filtered_df["Rating Category"].value_counts())
+fig_rating_cat = px.pie(
+    filtered_df, 
+    names="Rating Category", 
+    title="Rating Categories Distribution",
+    color_discrete_sequence=px.colors.qualitative.Pastel
+)
+st.plotly_chart(fig_rating_cat, use_container_width=True)
 
 # ================= AVERAGE RATING BY PRICE RANGE =================
 st.subheader("⭐ Average Rating by Price Range")
-avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean()
-
-fig3, ax3 = plt.subplots()
-sns.barplot(x=avg_rating.index, y=avg_rating.values, palette="Oranges_d", ax=ax3)
-ax3.set_ylim(0, 5)
-ax3.set_xlabel("Price Range")
-ax3.set_ylabel("Average Rating")
-for i, v in enumerate(avg_rating.values):
-    ax3.text(i, v + 0.05, f"{v:.2f}", ha="center")
-st.pyplot(fig3)
+avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean().sort_index()
+fig_avg_rating = px.bar(
+    x=avg_rating.index,
+    y=avg_rating.values,
+    labels={"x":"Price Range","y":"Average Rating"},
+    text=[f"{v:.2f}" for v in avg_rating.values],
+    color=avg_rating.values,
+    color_continuous_scale="Oranges"
+)
+fig_avg_rating.update_layout(showlegend=False, yaxis=dict(range=[0,5]))
+st.plotly_chart(fig_avg_rating, use_container_width=True)
 
 # ================= DATA QUALITY =================
 st.sidebar.subheader("🧹 Data Quality")
