@@ -25,40 +25,47 @@ df["Votes"] = pd.to_numeric(df["Votes"], errors="coerce")
 # ================= SIDEBAR =================
 st.sidebar.title("📊 Dashboard Filters")
 
-# City filter
+# City
 city_list = sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("🏙️ Select City", ["All"] + city_list)
 
-# Price range (NO default)
+# Price Range
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect("💰 Price Range", price_list)
 
-# Cuisine (NO default)
-cuisine_list = sorted(
-    set(
-        c.strip()
-        for cuisines in df["Cuisines"].dropna()
-        for c in cuisines.split(",")
-    )
+# ================= CUISINE LOGIC =================
+all_cuisines = (
+    df["Cuisines"]
+    .dropna()
+    .str.split(", ")
+    .explode()
 )
-selected_cuisine = st.sidebar.multiselect("🍕 Select Cuisines", cuisine_list)
 
-# Rating range
+top_10_cuisines = all_cuisines.value_counts().head(10).index.tolist()
+
+cuisine_list = sorted(all_cuisines.unique())
+
+# 👉 Top 10 cuisines already selected
+selected_cuisine = st.sidebar.multiselect(
+    "🍕 Select Cuisines",
+    cuisine_list,
+    default=top_10_cuisines
+)
+
+# Rating
 rating_range = st.sidebar.slider(
     "⭐ Rating Range", 0.0, 5.0, (0.0, 5.0), step=0.1
 )
 
-# Online delivery
+# Online Delivery
 delivery_option = st.sidebar.radio(
     "🚚 Online Delivery", ["All", "Yes", "No"]
 )
 
-# Minimum votes
+# Votes
 min_votes = st.sidebar.number_input(
     "🗳️ Minimum Votes", min_value=0, value=0, step=10
 )
-
-st.sidebar.divider()
 
 # ================= APPLY FILTERS =================
 filtered_df = df.copy()
@@ -86,28 +93,22 @@ if delivery_option != "All":
 
 filtered_df = filtered_df[filtered_df["Votes"] >= min_votes]
 
-# ================= MAIN TITLE =================
+# ================= MAIN =================
 st.title("🍽️ Hotel Industry Insights Through Data Analytics")
-st.caption("Professional Streamlit Dashboard using Python & Plotly")
+st.caption("Professional Streamlit Dashboard")
 
-# ================= EMPTY DATA CHECK =================
 if filtered_df.empty:
     st.warning("⚠️ No data available for selected filters.")
 else:
     # ================= METRICS =================
-    c1, c2, c3, c4 = st.columns(4)
-
+    c1, c2, c3 = st.columns(3)
     c1.metric("🏨 Total Restaurants", len(filtered_df))
-    c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(), 2))
-    c3.metric("🗳️ Average Votes", int(filtered_df["Votes"].mean()))
-    c4.metric(
-        "🚚 Online Delivery",
-        filtered_df[filtered_df["Has Online delivery"].str.lower() == "yes"].shape[0]
-    )
+    c2.metric("⭐ Avg Rating", round(filtered_df["Aggregate rating"].mean(), 2))
+    c3.metric("🗳️ Avg Votes", int(filtered_df["Votes"].mean()))
 
     st.divider()
 
-    # ================= HORIZONTAL BAR GRAPH =================
+    # ================= TOP 10 RESTAURANTS =================
     st.subheader("🏆 Top 10 Restaurants by Rating")
 
     top_restaurants = filtered_df.sort_values(
@@ -120,34 +121,15 @@ else:
         y="Restaurant Name",
         orientation="h",
         color="Aggregate rating",
-        hover_data=["City", "Votes", "Price range"],
-    )
-
-    fig.update_layout(
-        xaxis_title="Rating",
-        yaxis_title="Restaurant Name",
-        height=450
+        hover_data=["City", "Votes", "Price range"]
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
 
-    # ================= PRICE RANGE DISTRIBUTION =================
-    st.subheader("💰 Price Range Distribution")
-
-    price_fig = px.bar(
-        filtered_df["Price range"].value_counts().sort_index(),
-        labels={"index": "Price Range", "value": "Number of Restaurants"},
-    )
-
-    st.plotly_chart(price_fig, use_container_width=True)
-
-    st.divider()
-
     # ================= DATA TABLE =================
-    st.subheader("📋 Restaurant Dataset")
-
+    st.subheader("📋 Restaurant Details")
     st.dataframe(
         filtered_df[
             [
@@ -161,13 +143,3 @@ else:
             ]
         ]
     )
-
-# ================= CONCLUSION =================
-st.subheader("📌 Key Business Insights")
-st.markdown("""
-• Mid-range restaurants dominate the market  
-• High ratings increase restaurant visibility  
-• Limited cuisines capture major customer attention  
-• Online delivery plays a key role in popularity  
-• Data analytics helps in better business decisions  
-""")
