@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.express as px
 
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Hotel Industry Insights", layout="wide")
 st.title("🍽️ Hotel Industry Insights Through Data Analytics")
-st.markdown("Professional Dashboard for Restaurant Data Analysis")
+st.markdown("Interactive & Professional Business Dashboard")
 st.divider()
 
 # ================= LOAD DATA =================
@@ -21,11 +20,11 @@ df = load_data()
 # ================= SIDEBAR FILTERS =================
 st.sidebar.header("🔍 Filters")
 
-# City
+# City filter
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
 
-# Price Range
+# Price Range filter
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect(
     "Select Price Range",
@@ -33,7 +32,7 @@ selected_price = st.sidebar.multiselect(
     default=price_list
 )
 
-# Cuisines
+# Cuisine filter
 cuisine_list = sorted(
     df["Cuisines"].dropna().str.split(", ").explode().unique()
 )
@@ -43,7 +42,7 @@ selected_cuisine = st.sidebar.multiselect(
     default=cuisine_list
 )
 
-# ================= FILTERING (SAFE) =================
+# ================= SAFE FILTERING =================
 filtered_df = df.copy()
 
 if selected_city != "All":
@@ -85,20 +84,16 @@ st.divider()
 st.subheader("💰 Price Range Distribution")
 
 price_counts = filtered_df["Price range"].value_counts().sort_index()
-
-fig1, ax1 = plt.subplots()
-sns.barplot(
+fig_price = px.bar(
     x=price_counts.index,
     y=price_counts.values,
-    ax=ax1
+    text=price_counts.values,
+    labels={"x": "Price Range", "y": "Number of Restaurants"},
+    color=price_counts.values,
+    color_continuous_scale="Blues"
 )
-ax1.set_xlabel("Price Range")
-ax1.set_ylabel("Number of Restaurants")
-
-for i, v in enumerate(price_counts.values):
-    ax1.text(i, v, v, ha="center", va="bottom")
-
-st.pyplot(fig1)
+fig_price.update_layout(showlegend=False)
+st.plotly_chart(fig_price, use_container_width=True)
 
 # ================= TOP CUISINES (HORIZONTAL BAR) =================
 st.subheader("🍕 Top 10 Cuisines")
@@ -106,16 +101,17 @@ st.subheader("🍕 Top 10 Cuisines")
 cuisines = filtered_df["Cuisines"].str.split(", ").explode()
 top_cuisines = cuisines.value_counts().head(10)
 
-fig2, ax2 = plt.subplots()
-sns.barplot(
-    x=top_cuisines.values,
-    y=top_cuisines.index,
-    ax=ax2
+fig_cuisine = px.bar(
+    x=top_cuisines.values[::-1],
+    y=top_cuisines.index[::-1],
+    orientation="h",
+    text=top_cuisines.values[::-1],
+    labels={"x": "Number of Restaurants", "y": "Cuisine"},
+    color=top_cuisines.values[::-1],
+    color_continuous_scale="Greens"
 )
-ax2.set_xlabel("Number of Restaurants")
-ax2.set_ylabel("Cuisine")
-
-st.pyplot(fig2)
+fig_cuisine.update_layout(showlegend=False)
+st.plotly_chart(fig_cuisine, use_container_width=True)
 
 # ================= RATING CATEGORY =================
 st.subheader("⭐ Rating Categories")
@@ -129,32 +125,30 @@ def rating_category(r):
         return "Average"
 
 filtered_df["Rating Category"] = filtered_df["Aggregate rating"].apply(rating_category)
-st.bar_chart(filtered_df["Rating Category"].value_counts())
+
+fig_pie = px.pie(
+    filtered_df,
+    names="Rating Category",
+    title="Rating Distribution",
+    color_discrete_sequence=px.colors.qualitative.Pastel
+)
+st.plotly_chart(fig_pie, use_container_width=True)
 
 # ================= AVERAGE RATING BY PRICE RANGE =================
 st.subheader("⭐ Average Rating by Price Range")
 
-avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean()
+avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean().sort_index()
 
-fig3, ax3 = plt.subplots()
-sns.barplot(
+fig_avg = px.bar(
     x=avg_rating.index,
     y=avg_rating.values,
-    ax=ax3
+    text=[f"{v:.2f}" for v in avg_rating.values],
+    labels={"x": "Price Range", "y": "Average Rating"},
+    color=avg_rating.values,
+    color_continuous_scale="Oranges"
 )
-ax3.set_ylim(0, 5)
-ax3.set_xlabel("Price Range")
-ax3.set_ylabel("Average Rating")
-
-for i, v in enumerate(avg_rating.values):
-    ax3.text(i, v + 0.05, f"{v:.2f}", ha="center")
-
-st.pyplot(fig3)
-
-# ================= DATA QUALITY =================
-st.sidebar.subheader("🧹 Data Quality")
-st.sidebar.write("Missing Ratings:", df["Aggregate rating"].isna().sum())
-st.sidebar.write("Missing Cuisines:", df["Cuisines"].isna().sum())
+fig_avg.update_layout(yaxis=dict(range=[0, 5]), showlegend=False)
+st.plotly_chart(fig_avg, use_container_width=True)
 
 # ================= DATA PREVIEW =================
 with st.expander("📄 Dataset Preview"):
@@ -163,15 +157,15 @@ with st.expander("📄 Dataset Preview"):
 # ================= AUTO INSIGHT =================
 most_common_price = filtered_df["Price range"].mode()[0]
 st.info(
-    f"Most restaurants fall under price range {most_common_price}, indicating mid-range dominance."
+    f"Most restaurants belong to price range {most_common_price}, indicating strong mid-range market dominance."
 )
 
 # ================= CONCLUSION =================
 st.subheader("📌 Key Business Insights")
 st.markdown("""
 • Mid-range restaurants dominate the market  
-• Ratings are fairly consistent across price ranges  
-• Few cuisines capture majority of customer interest  
-• Online delivery increases restaurant reach  
-• Data quality checks improve analysis reliability  
+• Customer ratings remain stable across price ranges  
+• Limited cuisines capture majority market share  
+• Online delivery enhances customer reach  
+• Interactive dashboards support better business decisions  
 """)
