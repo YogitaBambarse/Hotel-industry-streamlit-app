@@ -10,7 +10,7 @@ st.title("🍽️ Hotel Industry Insights Through Data Analytics")
 @st.cache_data
 def load_data():
     df = pd.read_csv("Dataset.csv")
-    df.columns = df.columns.str.strip()  # कॉलम नामात extra spaces काढणे
+    df.columns = df.columns.str.strip()  # कॉलम नामातील extra spaces काढणे
     return df
 
 df = load_data()
@@ -21,16 +21,6 @@ st.sidebar.header("🔍 Filters")
 # शहर filter
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
-
-# restaurant/hotel नावाचा कॉलम auto detect
-name_col = None
-for col in df.columns:
-    if "restaurant" in col.lower() or "hotel" in col.lower():
-        name_col = col
-        break
-
-st.sidebar.subheader("🔎 Search Restaurant")
-search = st.sidebar.text_input("Type restaurant name")
 
 # ================= FILTER DATA =================
 if selected_city != "All":
@@ -56,23 +46,6 @@ st.sidebar.download_button(
 st.sidebar.subheader("🧹 Data Quality")
 st.sidebar.write("Missing Ratings:", filtered_df["Aggregate rating"].isna().sum())
 
-# ================= SEARCH FUNCTION =================
-if search and name_col:
-    st.subheader("🔍 Search Results")
-
-    result_df = filtered_df[
-        filtered_df[name_col]
-        .astype(str)
-        .str.contains(search, case=False, na=False)
-    ]
-
-    if result_df.empty:
-        st.warning("No restaurant found")
-    else:
-        st.dataframe(result_df)
-elif not name_col:
-    st.sidebar.warning("No restaurant/hotel name column found in the dataset!")
-
 # ================= METRICS =================
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
@@ -93,10 +66,8 @@ fig1, ax1 = plt.subplots()
 ax1.bar(price_counts.index, price_counts.values, color="skyblue")
 ax1.set_xlabel("Price Range")
 ax1.set_ylabel("Number of Restaurants")
-
 for i, v in enumerate(price_counts.values):
     ax1.text(price_counts.index[i], v + 0.1, v, ha="center")
-
 st.pyplot(fig1)
 
 # ================= TOP CUISINES =================
@@ -132,49 +103,48 @@ ax3.bar(avg_rating.index, avg_rating.values, color="orange")
 ax3.set_ylim(0, 5)
 ax3.set_xlabel("Price Range")
 ax3.set_ylabel("Average Rating")
-
 for i, v in enumerate(avg_rating.values):
     ax3.text(avg_rating.index[i], v + 0.05, f"{v:.2f}", ha="center")
-
 st.pyplot(fig3)
 
 # ================= CITY-WISE RESTAURANT RATINGS =================
 st.subheader("🏙️ City-wise Top Restaurant Ratings")
 
+# Auto-detect restaurant name column
+name_col = None
+for col in df.columns:
+    if "restaurant" in col.lower() or "hotel" in col.lower() or "name" in col.lower():
+        name_col = col
+        break
+
 if selected_city != "All" and name_col:
-    # selected city data sort by rating
     city_df = filtered_df.sort_values("Aggregate rating", ascending=False)
-
-    # user slider for top N restaurants
     top_n = st.slider("Select Top Restaurants", 5, 20, 10)
+    top_city_df = city_df[[name_col, "Aggregate rating"]].dropna().head(top_n)
 
-    top_city_df = city_df.head(top_n).copy()
+    if top_city_df.empty:
+        st.warning("Selected city मध्ये डेटा उपलब्ध नाही")
+    else:
+        fig4, ax4 = plt.subplots(figsize=(10, top_n * 0.6))
+        bars = ax4.barh(
+            top_city_df[name_col][::-1],
+            top_city_df["Aggregate rating"][::-1],
+            color="purple"
+        )
+        ax4.set_xlim(0, 5)
+        ax4.set_xlabel("Rating")
+        ax4.set_ylabel("Restaurant Name")
+        ax4.set_title(f"Top {top_n} Restaurants in {selected_city}")
 
-    # figure size dynamic based on top_n
-    fig4, ax4 = plt.subplots(figsize=(10, top_n * 0.6))
+        for bar in bars:
+            width = bar.get_width()
+            if width < 1:
+                ax4.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center")
+            else:
+                ax4.text(width - 0.2, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center", color="white")
 
-    # horizontal bar chart
-    bars = ax4.barh(
-        top_city_df[name_col][::-1],  # reverse for top on top
-        top_city_df["Aggregate rating"][::-1],
-        color="purple"
-    )
-
-    ax4.set_xlim(0, 5)
-    ax4.set_xlabel("Rating")
-    ax4.set_ylabel("Restaurant Name")
-    ax4.set_title(f"Top {top_n} Restaurants in {selected_city}")
-
-    # text annotation for bars
-    for bar in bars:
-        width = bar.get_width()
-        if width < 1:  # if rating is small, put text outside
-            ax4.text(width + 0.05, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center")
-        else:  # else put text inside
-            ax4.text(width - 0.2, bar.get_y() + bar.get_height()/2, f"{width:.2f}", va="center", color="white")
-
-    plt.tight_layout()
-    st.pyplot(fig4)
+        plt.tight_layout()
+        st.pyplot(fig4)
 else:
     st.info("Please select a city to view restaurant-wise ratings.")
 
