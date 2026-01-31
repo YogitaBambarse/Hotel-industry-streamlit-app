@@ -2,61 +2,79 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ================= PAGE CONFIG =================
-st.set_page_config(page_title="Hotel Industry Insights", layout="wide")
-st.title("🍽️ Hotel Industry Insights Through Data Analytics")
-st.markdown("Professional & Interactive Business Dashboard")
-st.divider()
+# -----------------------------
+# Page Config
+# -----------------------------
+st.set_page_config(
+    page_title="Hotel Industry Insights",
+    page_icon="🍽️",
+    layout="wide"
+)
 
-# ================= LOAD DATA =================
+# -----------------------------
+# Load Data
+# -----------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("Dataset.csv")
-    df.columns = df.columns.str.strip()
+    df = pd.read_csv("zomato.csv")   # तुमचं dataset नाव
     return df
 
 df = load_data()
 
-# ================= SIDEBAR =================
+# -----------------------------
+# Basic Cleaning
+# -----------------------------
+df["Aggregate rating"] = pd.to_numeric(df["Aggregate rating"], errors="coerce")
+df["Votes"] = pd.to_numeric(df["Votes"], errors="coerce")
+
+# -----------------------------
+# Sidebar
+# -----------------------------
 st.sidebar.title("📊 Dashboard Controls")
 
-# ---- City Filter ----
-city_list = ["All"] + sorted(df["City"].dropna().unique())
-selected_city = st.sidebar.selectbox("🏙️ Select City", city_list)
+# City Filter
+city_list = sorted(df["City"].dropna().unique())
+selected_city = st.sidebar.selectbox(
+    "🏙️ Select City",
+    ["All"] + city_list
+)
 
-# ---- Price Range Filter ----
+# Price Range (NO default selection)
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect(
     "💰 Price Range",
-    price_list,
-    default=price_list
+    price_list
 )
 
-# ---- Cuisine Filter ----
+# Cuisine (NO default selection)
 cuisine_list = sorted(
-    df["Cuisines"].dropna().str.split(", ").explode().unique()
+    set(
+        cuisine
+        for cuisines in df["Cuisines"].dropna()
+        for cuisine in cuisines.split(", ")
+    )
 )
+
 selected_cuisine = st.sidebar.multiselect(
     "🍕 Cuisines",
-    cuisine_list,
-    default=cuisine_list
+    cuisine_list
 )
 
 st.sidebar.divider()
 
-# ---- Rating Range ----
+# Rating Filter
 rating_range = st.sidebar.slider(
     "⭐ Rating Range",
     0.0, 5.0, (0.0, 5.0), step=0.1
 )
 
-# ---- Online Delivery ----
+# Online Delivery
 delivery_option = st.sidebar.radio(
     "🚚 Online Delivery",
-    ["All", "Online Delivery Only", "No Online Delivery"]
+    ["All", "Yes", "No"]
 )
 
-# ---- Minimum Votes ----
+# Votes Filter
 min_votes = st.sidebar.number_input(
     "🗳️ Minimum Votes",
     min_value=0,
@@ -66,17 +84,19 @@ min_votes = st.sidebar.number_input(
 
 st.sidebar.divider()
 
-# ---- Sort Option ----
+# Sort Option
 sort_option = st.sidebar.selectbox(
     "🔽 Sort By",
     ["Aggregate rating", "Votes", "Price range"]
 )
 
-# ---- Reset Button ----
+# Reset Button
 if st.sidebar.button("🔄 Reset Filters"):
     st.experimental_rerun()
 
-# ================= FILTERING =================
+# -----------------------------
+# Apply Filters
+# -----------------------------
 filtered_df = df.copy()
 
 if selected_city != "All":
@@ -95,120 +115,64 @@ filtered_df = filtered_df[
     (filtered_df["Aggregate rating"] <= rating_range[1])
 ]
 
-if delivery_option == "Online Delivery Only":
+if delivery_option != "All":
     filtered_df = filtered_df[
-        filtered_df["Has Online delivery"].str.lower() == "yes"
-    ]
-elif delivery_option == "No Online Delivery":
-    filtered_df = filtered_df[
-        filtered_df["Has Online delivery"].str.lower() == "no"
+        filtered_df["Has Online delivery"].str.lower() == delivery_option.lower()
     ]
 
 filtered_df = filtered_df[filtered_df["Votes"] >= min_votes]
 
 filtered_df = filtered_df.sort_values(sort_option, ascending=False)
 
-# ================= DOWNLOAD =================
-st.sidebar.download_button(
-    "⬇️ Download Filtered Data",
-    filtered_df.to_csv(index=False),
-    file_name="hotel_filtered_data.csv"
-)
+# -----------------------------
+# Main Title
+# -----------------------------
+st.title("🍽️ Hotel Industry Insights Through Data Analytics")
+st.caption("Professional Data Analytics Dashboard")
 
-# ================= METRICS =================
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
-c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(), 2))
-c3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum()))
-c4.metric(
-    "🚚 Online Delivery",
-    filtered_df[filtered_df["Has Online delivery"].str.lower() == "yes"].shape[0]
-)
+# -----------------------------
+# No Data Message
+# -----------------------------
+if filtered_df.empty:
+    st.warning("⚠️ No data found for selected filters.")
+else:
+    # -----------------------------
+    # KPIs
+    # -----------------------------
+    c1, c2, c3 = st.columns(3)
 
-st.divider()
+    c1.metric("📦 Total Restaurants", len(filtered_df))
+    c2.metric("⭐ Avg Rating", round(filtered_df["Aggregate rating"].mean(), 2))
+    c3.metric("🗳️ Avg Votes", int(filtered_df["Votes"].mean()))
 
-# ================= PRICE RANGE DISTRIBUTION =================
-st.subheader("💰 Price Range Distribution")
-price_counts = filtered_df["Price range"].value_counts().sort_index()
+    st.divider()
 
-fig_price = px.bar(
-    x=price_counts.index,
-    y=price_counts.values,
-    text=price_counts.values,
-    labels={"x": "Price Range", "y": "Number of Restaurants"},
-    color=price_counts.values,
-    color_continuous_scale="Blues"
-)
-fig_price.update_layout(showlegend=False)
-st.plotly_chart(fig_price, use_container_width=True)
+    # -----------------------------
+    # Horizontal Bar Chart
+    # -----------------------------
+    top_restaurants = filtered_df.head(10)
 
-# ================= TOP CUISINES =================
-st.subheader("🍕 Top 10 Cuisines")
-cuisines = filtered_df["Cuisines"].str.split(", ").explode()
-top_cuisines = cuisines.value_counts().head(10)
+    fig = px.bar(
+        top_restaurants,
+        x="Aggregate rating",
+        y="Restaurant Name",
+        orientation="h",
+        title="🏆 Top 10 Restaurants by Rating",
+        hover_data=["City", "Votes", "Price range"]
+    )
 
-fig_cuisine = px.bar(
-    x=top_cuisines.values[::-1],
-    y=top_cuisines.index[::-1],
-    orientation="h",
-    text=top_cuisines.values[::-1],
-    labels={"x": "Number of Restaurants", "y": "Cuisine"},
-    color=top_cuisines.values[::-1],
-    color_continuous_scale="Greens"
-)
-fig_cuisine.update_layout(showlegend=False)
-st.plotly_chart(fig_cuisine, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
 
-# ================= RATING CATEGORY =================
-st.subheader("⭐ Rating Categories")
+    st.divider()
 
-def rating_category(r):
-    if r >= 4.5:
-        return "Excellent"
-    elif r >= 3.5:
-        return "Good"
-    else:
-        return "Average"
-
-filtered_df["Rating Category"] = filtered_df["Aggregate rating"].apply(rating_category)
-
-fig_pie = px.pie(
-    filtered_df,
-    names="Rating Category",
-    color_discrete_sequence=px.colors.qualitative.Pastel
-)
-st.plotly_chart(fig_pie, use_container_width=True)
-
-# ================= AVERAGE RATING BY PRICE =================
-st.subheader("⭐ Average Rating by Price Range")
-avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean().sort_index()
-
-fig_avg = px.bar(
-    x=avg_rating.index,
-    y=avg_rating.values,
-    text=[f"{v:.2f}" for v in avg_rating.values],
-    labels={"x": "Price Range", "y": "Average Rating"},
-    color=avg_rating.values,
-    color_continuous_scale="Oranges"
-)
-fig_avg.update_layout(yaxis=dict(range=[0, 5]), showlegend=False)
-st.plotly_chart(fig_avg, use_container_width=True)
-
-# ================= DATA PREVIEW =================
-with st.expander("📄 Dataset Preview"):
-    st.dataframe(filtered_df.head(20))
-
-# ================= INSIGHTS =================
-most_common_price = filtered_df["Price range"].mode()[0]
-st.info(
-    f"Most restaurants fall in price range {most_common_price}, showing mid-range market dominance."
-)
-
-st.subheader("📌 Key Business Insights")
-st.markdown("""
-• Mid-range restaurants dominate the market  
-• Higher votes increase rating reliability  
-• Few cuisines capture major demand  
-• Online delivery boosts visibility  
-• Filters help in better decision making  
-""")
+    # -----------------------------
+    # Data Table
+    # -----------------------------
+    st.subheader("📋 Restaurant Details")
+    st.dataframe(
+        filtered_df[
+            ["Restaurant Name", "City", "Cuisines",
+             "Price range", "Aggregate rating", "Votes",
+             "Has Online delivery"]
+        ]
+    )
