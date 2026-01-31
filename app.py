@@ -23,7 +23,6 @@ else:
     filtered_df = df
 
 c1, c2, c3, c4 = st.columns(4)
-
 c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
 c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(skipna=True), 2))
 c3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum(skipna=True)))
@@ -32,18 +31,30 @@ c4.metric(
     filtered_df[filtered_df["Has Online delivery"].str.strip() == "Yes"].shape[0]
 )
 
+# Price Range Distribution
 st.subheader("💰 Price Range Distribution")
 price_counts = filtered_df["Price range"].value_counts().sort_index()
+
 fig1, ax1 = plt.subplots()
-ax1.bar(price_counts.index, price_counts.values)
+ax1.bar(price_counts.index, price_counts.values, color='skyblue')
+ax1.set_title("Restaurants by Price Range", fontsize=14)
+ax1.set_xlabel("Price Range", fontsize=12)
+ax1.set_ylabel("Number of Restaurants", fontsize=12)
+ax1.set_xticks(price_counts.index)
 st.pyplot(fig1)
 
+# Top 10 Cuisines
 st.subheader("🍕 Top 10 Cuisines")
 cuisines = filtered_df["Cuisines"].dropna().str.split(", ").explode()
 top_cuisines = cuisines.value_counts().head(10)
+
 fig2, ax2 = plt.subplots()
-ax2.barh(top_cuisines.index, top_cuisines.values)
+ax2.barh(top_cuisines.index[::-1], top_cuisines.values[::-1], color='lightgreen')  # reverse for top-down
+ax2.set_title("Top 10 Cuisines", fontsize=14)
+ax2.set_xlabel("Number of Restaurants", fontsize=12)
+ax2.set_ylabel("Cuisine Type", fontsize=12)
 st.pyplot(fig2)
 
+# Dataset Preview
 st.subheader("📄 Dataset Preview")
 st.dataframe(filtered_df.head(20))
