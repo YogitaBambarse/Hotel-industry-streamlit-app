@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 st.set_page_config(page_title="Hotel Industry Insights", layout="wide")
 st.title("🍽️ Hotel Industry Insights Through Data Analytics")
 
-# ================= LOAD DATA =================
+# ================= DATA LOAD =================
 @st.cache_data
 def load_data():
     df = pd.read_csv("Dataset.csv")
-    df.columns = df.columns.str.strip()
+    df.columns = df.columns.str.strip()  # कॉलम नामात extra spaces काढणे
     return df
 
 df = load_data()
@@ -18,10 +18,11 @@ df = load_data()
 # ================= SIDEBAR =================
 st.sidebar.header("🔍 Filters")
 
+# शहर filter
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
 
-# Restaurant name column auto-detect
+# restaurant/hotel नावाचा कॉलम auto detect
 name_col = None
 for col in df.columns:
     if "restaurant" in col.lower() or "hotel" in col.lower():
@@ -33,9 +34,16 @@ search = st.sidebar.text_input("Type restaurant name")
 
 # ================= FILTER DATA =================
 if selected_city != "All":
-    filtered_df = df[df["City"] == selected_city]
+    filtered_df = df[df["City"] == selected_city].copy()
 else:
-    filtered_df = df
+    filtered_df = df.copy()
+
+# ================= HANDLE MISSING VALUES =================
+filtered_df["Aggregate rating"] = filtered_df["Aggregate rating"].fillna(0)
+filtered_df["Votes"] = filtered_df["Votes"].fillna(0)
+filtered_df["Has Online delivery"] = filtered_df["Has Online delivery"].fillna("No")
+filtered_df["Price range"] = filtered_df["Price range"].fillna("N/A")
+filtered_df["Cuisines"] = filtered_df["Cuisines"].fillna("Unknown")
 
 # ================= DOWNLOAD =================
 st.sidebar.download_button(
@@ -48,7 +56,7 @@ st.sidebar.download_button(
 st.sidebar.subheader("🧹 Data Quality")
 st.sidebar.write("Missing Ratings:", filtered_df["Aggregate rating"].isna().sum())
 
-# ================= SEARCH RESULT =================
+# ================= SEARCH FUNCTION =================
 if search and name_col:
     st.subheader("🔍 Search Results")
 
@@ -62,6 +70,9 @@ if search and name_col:
         st.warning("No restaurant found")
     else:
         st.dataframe(result_df)
+elif not name_col:
+    st.sidebar.warning("No restaurant/hotel name column found in the dataset!")
+
 # ================= METRICS =================
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
@@ -69,7 +80,7 @@ c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(), 2)
 c3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum()))
 c4.metric(
     "🚚 Online Delivery",
-    filtered_df[filtered_df["Has Online delivery"].str.strip() == "Yes"].shape[0]
+    filtered_df[filtered_df["Has Online delivery"].str.strip().str.lower() == "yes"].shape[0]
 )
 
 st.divider()
@@ -84,13 +95,13 @@ ax1.set_xlabel("Price Range")
 ax1.set_ylabel("Number of Restaurants")
 
 for i, v in enumerate(price_counts.values):
-    ax1.text(price_counts.index[i], v, v, ha="center")
+    ax1.text(price_counts.index[i], v + 0.1, v, ha="center")
 
 st.pyplot(fig1)
 
 # ================= TOP CUISINES =================
 st.subheader("🍕 Top 10 Cuisines")
-cuisines = filtered_df["Cuisines"].dropna().str.split(", ").explode()
+cuisines = filtered_df["Cuisines"].str.split(", ").explode()
 top_cuisines = cuisines.value_counts().head(10)
 
 fig2, ax2 = plt.subplots()
@@ -112,7 +123,7 @@ filtered_df["Rating Category"] = filtered_df["Aggregate rating"].apply(rating_ca
 st.subheader("⭐ Rating Categories")
 st.bar_chart(filtered_df["Rating Category"].value_counts())
 
-# ================= AVERAGE RATING GRAPH =================
+# ================= AVERAGE RATING BY PRICE RANGE =================
 st.subheader("⭐ Average Rating by Price Range")
 avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean()
 
@@ -127,7 +138,7 @@ for i, v in enumerate(avg_rating.values):
 
 st.pyplot(fig3)
 
-# ================= CITY-WISE RESTAURANT NAMES =================
+# ================= CITY-WISE RESTAURANT RATINGS =================
 st.subheader("🏙️ City-wise Restaurant Ratings")
 
 if selected_city != "All" and name_col:
@@ -158,9 +169,14 @@ else:
     st.info("Please select a city to view restaurant-wise ratings.")
 
 # ================= AUTO INSIGHT =================
+if not filtered_df['Price range'].dropna().empty:
+    most_common_price = filtered_df['Price range'].mode()[0]
+else:
+    most_common_price = "N/A"
+
 st.info(
     f"In {selected_city}, most restaurants fall in price range "
-    f"{filtered_df['Price range'].mode()[0]} indicating mid-range dominance."
+    f"{most_common_price} indicating mid-range dominance."
 )
 
 # ================= DATA PREVIEW =================
