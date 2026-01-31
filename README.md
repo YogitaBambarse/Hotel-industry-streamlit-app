@@ -1,6 +1,8 @@
 # Hotel-industry-streamlit-app
 
 http://share.streamlit.io
+https://github.com/YogitaBambarse/Hotel-industry-streamlit-app
+
 # 🍽️ Hotel Industry Insights Through Data Analytics
 
 This project is a professional **Streamlit Dashboard** developed using Python for analyzing hotel/restaurant industry data.
