@@ -46,5 +46,5 @@ To analyze restaurant data and generate meaningful business insights using data 
 ## ▶️ How to Run the Project
 
 1. Clone the repository
-```bash
-git clone <https://github.com/YogitaBambarse/Hotel-industry-streamlit-app>
+git clone
+ https://github.com/YogitaBambarse/Hotel-industry-streamlit-app
