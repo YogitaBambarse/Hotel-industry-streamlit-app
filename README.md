@@ -47,4 +47,4 @@ To analyze restaurant data and generate meaningful business insights using data 
 
 1. Clone the repository
 ```bash
-git clone <repository-link>
+git clone <https://github.com/YogitaBambarse/Hotel-industry-streamlit-app>
