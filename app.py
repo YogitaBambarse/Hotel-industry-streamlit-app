@@ -51,11 +51,17 @@ st.sidebar.write("Missing Ratings:", filtered_df["Aggregate rating"].isna().sum(
 # ================= SEARCH RESULT =================
 if search and name_col:
     st.subheader("🔍 Search Results")
-    result_df = filtered_df[
-        filtered_df[name_col].str.contains(search, case=False, na=False)
-    ]
-    st.dataframe(result_df)
 
+    result_df = filtered_df[
+        filtered_df[name_col]
+        .astype(str)
+        .str.contains(search, case=False, na=False)
+    ]
+
+    if result_df.empty:
+        st.warning("No restaurant found")
+    else:
+        st.dataframe(result_df)
 # ================= METRICS =================
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
