@@ -2,7 +2,10 @@
 
 http://share.streamlit.io
 
+🔗 Live App:
 https://hotel-industry-app-app-cfntljtloleapeebgduwqj.streamlit.app/
+
+This project analyzes hotel industry data using Python, Pandas, Streamlit, and Data Visualization.
 
 # 🍽️ Hotel Industry Insights Through Data Analytics
 
