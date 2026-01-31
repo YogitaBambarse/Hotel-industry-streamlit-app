@@ -129,8 +129,9 @@ st.pyplot(fig)
 st.subheader("🏙️ City-wise Restaurant Ratings")
 
 if selected_city != "All":
-    city_df = filtered_df.sort_values("Aggregate rating")
+    city_df = filtered_df.sort_values("Aggregate rating", ascending=False)
 
+    # Restaurant name column auto-detect
     name_col = None
     for c in city_df.columns:
         if "restaurant" in c.lower() or "hotel" in c.lower():
@@ -138,13 +139,30 @@ if selected_city != "All":
             break
 
     if name_col:
-        fig, ax = plt.subplots(figsize=(10, max(6, len(city_df)*0.3)))
-        ax.barh(city_df[name_col], city_df["Aggregate rating"])
-        ax.set_xlim(0,5)
+        top_n = st.slider("Select Top Restaurants", 5, 20, 10)
+
+        top_city_df = city_df.head(top_n)
+
+        fig, ax = plt.subplots(figsize=(10, top_n * 0.5))
+        bars = ax.barh(
+            top_city_df[name_col][::-1],
+            top_city_df["Aggregate rating"][::-1],
+            color="skyblue"
+        )
+
+        ax.set_xlabel("Rating")
+        ax.set_ylabel("Restaurant Name")
+        ax.set_xlim(0, 5)
+        ax.set_title(f"Top {top_n} Restaurants in {selected_city}")
+
+        for bar in bars:
+            w = bar.get_width()
+            ax.text(w + 0.05, bar.get_y() + bar.get_height()/2,
+                    f"{w:.2f}", va='center')
+
         st.pyplot(fig)
 else:
-    st.info("Select a city to see restaurant-wise graph")
-
+    st.info("Please select a city to view restaurant-wise ratings.")
 # ================= AUTO INSIGHT =================
 st.info(
     f"In {selected_city}, most restaurants fall in price range "
