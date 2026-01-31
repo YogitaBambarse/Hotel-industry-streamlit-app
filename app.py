@@ -2,8 +2,6 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
-
 # ================= PAGE CONFIG =================
 st.set_page_config(page_title="Hotel Industry Insights", layout="wide")
 st.title("🍽️ Hotel Industry Insights Through Data Analytics")
@@ -19,12 +17,11 @@ df = load_data()
 
 # ================= SIDEBAR =================
 st.sidebar.header("🔍 Filters")
-logout_button()
 
 city_list = ["All"] + sorted(df["City"].dropna().unique())
 selected_city = st.sidebar.selectbox("Select City", city_list)
 
-# Auto detect restaurant name column
+# Restaurant name column auto-detect
 name_col = None
 for col in df.columns:
     if "restaurant" in col.lower() or "hotel" in col.lower():
@@ -42,9 +39,9 @@ else:
 
 # ================= DOWNLOAD =================
 st.sidebar.download_button(
-    "⬇️ Download Data",
+    "⬇️ Download Filtered Data",
     filtered_df.to_csv(index=False),
-    file_name="hotel_analysis.csv"
+    file_name="hotel_filtered_data.csv"
 )
 
 # ================= DATA QUALITY =================
@@ -62,32 +59,37 @@ if search and name_col:
 # ================= METRICS =================
 c1, c2, c3, c4 = st.columns(4)
 c1.metric("🏨 Total Restaurants", filtered_df.shape[0])
-c2.metric("⭐ Avg Rating", round(filtered_df["Aggregate rating"].mean(), 2))
+c2.metric("⭐ Average Rating", round(filtered_df["Aggregate rating"].mean(), 2))
 c3.metric("🗳️ Total Votes", int(filtered_df["Votes"].sum()))
-c4.metric("🚚 Online Delivery",
-          filtered_df[filtered_df["Has Online delivery"].str.strip() == "Yes"].shape[0])
+c4.metric(
+    "🚚 Online Delivery",
+    filtered_df[filtered_df["Has Online delivery"].str.strip() == "Yes"].shape[0]
+)
 
 st.divider()
 
-# ================= PRICE RANGE =================
+# ================= PRICE RANGE DISTRIBUTION =================
 st.subheader("💰 Price Range Distribution")
 price_counts = filtered_df["Price range"].value_counts().sort_index()
 
 fig1, ax1 = plt.subplots()
 ax1.bar(price_counts.index, price_counts.values, color="skyblue")
 ax1.set_xlabel("Price Range")
-ax1.set_ylabel("Restaurants")
+ax1.set_ylabel("Number of Restaurants")
+
 for i, v in enumerate(price_counts.values):
     ax1.text(price_counts.index[i], v, v, ha="center")
+
 st.pyplot(fig1)
 
-# ================= CUISINES =================
+# ================= TOP CUISINES =================
 st.subheader("🍕 Top 10 Cuisines")
 cuisines = filtered_df["Cuisines"].dropna().str.split(", ").explode()
 top_cuisines = cuisines.value_counts().head(10)
 
 fig2, ax2 = plt.subplots()
 ax2.barh(top_cuisines.index[::-1], top_cuisines.values[::-1], color="lightgreen")
+ax2.set_xlabel("Number of Restaurants")
 st.pyplot(fig2)
 
 # ================= RATING CATEGORY =================
@@ -104,18 +106,22 @@ filtered_df["Rating Category"] = filtered_df["Aggregate rating"].apply(rating_ca
 st.subheader("⭐ Rating Categories")
 st.bar_chart(filtered_df["Rating Category"].value_counts())
 
-# ================= AVG RATING =================
+# ================= AVERAGE RATING GRAPH =================
 st.subheader("⭐ Average Rating by Price Range")
-avg = filtered_df.groupby("Price range")["Aggregate rating"].mean()
+avg_rating = filtered_df.groupby("Price range")["Aggregate rating"].mean()
 
 fig3, ax3 = plt.subplots()
-ax3.bar(avg.index, avg.values, color="orange")
+ax3.bar(avg_rating.index, avg_rating.values, color="orange")
 ax3.set_ylim(0, 5)
-for i, v in enumerate(avg.values):
-    ax3.text(avg.index[i], v + 0.05, f"{v:.2f}", ha="center")
+ax3.set_xlabel("Price Range")
+ax3.set_ylabel("Average Rating")
+
+for i, v in enumerate(avg_rating.values):
+    ax3.text(avg_rating.index[i], v + 0.05, f"{v:.2f}", ha="center")
+
 st.pyplot(fig3)
 
-# ================= CITY-WISE RESTAURANTS (FIXED) =================
+# ================= CITY-WISE RESTAURANT NAMES =================
 st.subheader("🏙️ City-wise Restaurant Ratings")
 
 if selected_city != "All" and name_col:
@@ -138,7 +144,7 @@ if selected_city != "All" and name_col:
 
     for bar in bars:
         w = bar.get_width()
-        ax4.text(w + 0.05, bar.get_y() + bar.get_height() / 2,
+        ax4.text(w + 0.05, bar.get_y() + bar.get_height()/2,
                  f"{w:.2f}", va="center")
 
     st.pyplot(fig4)
@@ -159,7 +165,7 @@ with st.expander("📄 Dataset Preview"):
 st.subheader("📌 Key Business Insights")
 st.markdown("""
 • Mid-range priced restaurants dominate the market  
-• Customer ratings are consistent across price ranges  
+• Customer ratings remain consistent across price ranges  
 • Few cuisines capture major market share  
 • City-wise analysis shows strong competition  
 • Online delivery improves restaurant visibility  
