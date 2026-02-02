@@ -43,7 +43,35 @@ selected_city = st.sidebar.selectbox("🏙️ Select City", ["All"] + city_list)
 # Price Range
 price_list = sorted(df["Price range"].dropna().unique())
 selected_price = st.sidebar.multiselect("💰 Price Range", price_list)
+# ================= ABOUT PROJECT =================
+st.sidebar.markdown("---")
+st.sidebar.subheader("ℹ️ About Project")
 
+st.sidebar.write("""
+**Hotel Industry Insights Through Data Analytics** हा project
+Python आणि Data Analytics वापरून develop करण्यात आला आहे.
+
+या project मध्ये hotel / restaurant industry चा data analyse करून
+price range, cuisines, ratings आणि customer preferences यावर
+meaningful business insights काढले आहेत.
+
+हा project **Cognifyz Technology** या company मधील
+internship दरम्यान पूर्ण करण्यात आला आहे.
+""")
+
+# ================= CONTACT =================
+st.sidebar.subheader("📞 Contact")
+
+st.sidebar.write("""
+👩‍💻 **Name:** Yogita Bambarse  
+🎓 **Course:** TE (Electronics & Telecommunication)  
+🏫 **University:** Savitribai Phule Pune University  
+
+📧 **Email:** bambarseyogita@gmail.com  
+🔗 **GitHub:** https://github.com/YogitaBambarse  
+🌐 **Live Project:**  
+https://hotel-industry-app-app-cfntljtloleapeebgduwqj.streamlit.app/
+""")
 # ================= CUISINE LOGIC =================
 all_cuisines = (
     df["Cuisines"]
